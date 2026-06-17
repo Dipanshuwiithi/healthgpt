@@ -1,5 +1,6 @@
 import CategoryBadge from './CategoryBadge';
 import { Leaf, User } from 'lucide-react';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 interface Props {
   role: 'user' | 'assistant';
@@ -46,22 +47,24 @@ function renderInline(text: string) {
 
 export default function ChatMessage({ role, content, category, isEmergency }: Props) {
   const isUser = role === 'user';
+  const isMobile = useIsMobile();
+  const avatarSize = isMobile ? 26 : 32;
 
   return (
     <div
       style={{
         display: 'flex',
-        gap: '10px',
+        gap: isMobile ? '8px' : '10px',
         alignItems: 'flex-start',
         justifyContent: isUser ? 'flex-end' : 'flex-start',
-        marginBottom: '18px',
+        marginBottom: isMobile ? '14px' : '18px',
       }}
     >
       {!isUser && (
         <div
           style={{
-            width: '32px',
-            height: '32px',
+            width: `${avatarSize}px`,
+            height: `${avatarSize}px`,
             borderRadius: '50%',
             background: isEmergency ? 'var(--emergency-bg)' : 'var(--accent-soft)',
             display: 'flex',
@@ -71,11 +74,19 @@ export default function ChatMessage({ role, content, category, isEmergency }: Pr
             marginTop: '2px',
           }}
         >
-          <Leaf size={16} color={isEmergency ? 'var(--emergency)' : 'var(--accent)'} strokeWidth={2} />
+          <Leaf size={isMobile ? 13 : 16} color={isEmergency ? 'var(--emergency)' : 'var(--accent)'} strokeWidth={2} />
         </div>
       )}
 
-      <div style={{ maxWidth: '72%', display: 'flex', flexDirection: 'column', alignItems: isUser ? 'flex-end' : 'flex-start' }}>
+      <div
+        style={{
+          maxWidth: isMobile ? '86%' : '72%',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: isUser ? 'flex-end' : 'flex-start',
+          minWidth: 0,
+        }}
+      >
         {!isUser && category && <CategoryBadge category={category} />}
         <div
           style={{
@@ -83,10 +94,11 @@ export default function ChatMessage({ role, content, category, isEmergency }: Pr
             color: isUser ? '#fff' : 'var(--text)',
             border: isUser ? 'none' : `1px solid ${isEmergency ? 'var(--emergency)' : 'var(--border)'}`,
             borderRadius: isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-            padding: '12px 16px',
-            fontSize: '14.5px',
+            padding: isMobile ? '10px 13px' : '12px 16px',
+            fontSize: isMobile ? '14px' : '14.5px',
             lineHeight: '1.6',
             boxShadow: isUser ? 'none' : '0 1px 3px rgba(0, 0, 0, 0.25)',
+            wordBreak: 'break-word',
           }}
         >
           {renderContent(content)}
@@ -96,8 +108,8 @@ export default function ChatMessage({ role, content, category, isEmergency }: Pr
       {isUser && (
         <div
           style={{
-            width: '32px',
-            height: '32px',
+            width: `${avatarSize}px`,
+            height: `${avatarSize}px`,
             borderRadius: '50%',
             background: 'var(--accent-dark)',
             display: 'flex',
@@ -107,7 +119,7 @@ export default function ChatMessage({ role, content, category, isEmergency }: Pr
             marginTop: '2px',
           }}
         >
-          <User size={15} color="#fff" strokeWidth={2} />
+          <User size={isMobile ? 12 : 15} color="#fff" strokeWidth={2} />
         </div>
       )}
     </div>

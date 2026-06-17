@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { Send } from 'lucide-react';
+import { Send, Menu } from 'lucide-react';
 import ChatMessage from './components/ChatMessage';
 import TypingIndicator from './components/TypingIndicator';
 import SuggestionChips from './components/SuggestionChips';
 import Sidebar from './components/Sidebar';
+import { useIsMobile } from './hooks/useIsMobile';
 import {
   createSession,
   sendMessage,
@@ -32,6 +33,8 @@ const WELCOME: DisplayMessage = {
 };
 
 export default function App() {
+  const isMobile = useIsMobile();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<DisplayMessage[]>([WELCOME]);
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
@@ -135,13 +138,16 @@ export default function App() {
   const showSuggestions = messages.length === 1;
 
   return (
-    <div style={{ height: '100vh', display: 'flex', background: 'var(--bg)' }}>
+    <div style={{ height: '100vh', display: 'flex', background: 'var(--bg)', overflow: 'hidden' }}>
       <Sidebar
         conversations={conversations}
         activeId={sessionId}
         onSelect={handleSelectConversation}
         onNewChat={handleNewChat}
         onDelete={handleDeleteConversation}
+        isMobile={isMobile}
+        isOpen={isMobile ? sidebarOpen : true}
+        onClose={() => setSidebarOpen(false)}
       />
 
       <div
@@ -149,14 +155,60 @@ export default function App() {
           flex: 1,
           display: 'flex',
           flexDirection: 'column',
-          maxWidth: '760px',
-          margin: '0 auto',
+          maxWidth: isMobile ? '100%' : '760px',
+          margin: isMobile ? '0' : '0 auto',
           width: '100%',
           minWidth: 0,
+          height: '100%',
         }}
       >
+        {/* Mobile top bar with hamburger */}
+        {isMobile && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              padding: '12px 16px',
+              borderBottom: '1px solid var(--border)',
+              flexShrink: 0,
+            }}
+          >
+            <button
+              onClick={() => setSidebarOpen(true)}
+              aria-label="Open menu"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '36px',
+                height: '36px',
+                borderRadius: '8px',
+                border: '1px solid var(--border)',
+                background: 'var(--surface)',
+                color: 'var(--text)',
+                cursor: 'pointer',
+                flexShrink: 0,
+              }}
+            >
+              <Menu size={18} />
+            </button>
+            <span style={{ fontFamily: 'var(--font-display)', fontSize: '16px', fontWeight: 600, color: 'var(--text)' }}>
+              HealthGPT
+            </span>
+          </div>
+        )}
+
         {/* Chat area */}
-        <div ref={scrollRef} className="chat-scroll" style={{ flex: 1, overflowY: 'auto', padding: '24px 24px 20px' }}>
+        <div
+          ref={scrollRef}
+          className="chat-scroll"
+          style={{
+            flex: 1,
+            overflowY: 'auto',
+            padding: isMobile ? '16px 14px 16px' : '24px 24px 20px',
+          }}
+        >
           {historyLoading ? (
             <TypingIndicator />
           ) : (
@@ -167,7 +219,7 @@ export default function App() {
               {loading && <TypingIndicator />}
 
               {showSuggestions && !loading && (
-                <div style={{ marginLeft: '42px' }}>
+                <div style={{ marginLeft: isMobile ? '0' : '42px' }}>
                   <p style={{ fontSize: '12px', color: 'var(--ink-soft)', marginBottom: '8px', fontFamily: 'var(--font-mono)' }}>
                     TRY ASKING
                   </p>
@@ -195,7 +247,12 @@ export default function App() {
         </div>
 
         {/* Input bar */}
-        <div style={{ padding: '8px 24px 22px', flexShrink: 0 }}>
+        <div
+          style={{
+            padding: isMobile ? '8px 12px calc(14px + env(safe-area-inset-bottom))' : '8px 24px 22px',
+            flexShrink: 0,
+          }}
+        >
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -207,7 +264,7 @@ export default function App() {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask about symptoms, diet, exercise, or wellness…"
+              placeholder={isMobile ? 'Ask HealthGPT…' : 'Ask about symptoms, diet, exercise, or wellness…'}
               disabled={!sessionId || loading}
               style={{
                 flex: 1,
@@ -215,11 +272,12 @@ export default function App() {
                 borderRadius: '999px',
                 border: '1px solid var(--line)',
                 background: 'var(--paper)',
-                fontSize: '14px',
+                fontSize: '16px',
                 fontFamily: 'var(--font-body)',
                 color: 'var(--ink)',
                 outline: 'none',
                 transition: 'border-color 0.15s, box-shadow 0.15s',
+                minWidth: 0,
               }}
               onFocus={(e) => {
                 e.currentTarget.style.borderColor = 'var(--accent)';
@@ -251,9 +309,11 @@ export default function App() {
               <Send size={18} strokeWidth={2.25} />
             </button>
           </form>
-          <p style={{ fontSize: '11px', color: 'var(--ink-soft)', textAlign: 'center', marginTop: '10px', marginBottom: 0 }}>
-            HealthGPT provides general wellness information only — not a substitute for professional medical advice.
-          </p>
+          {!isMobile && (
+            <p style={{ fontSize: '11px', color: 'var(--ink-soft)', textAlign: 'center', marginTop: '10px', marginBottom: 0 }}>
+              HealthGPT provides general wellness information only — not a substitute for professional medical advice.
+            </p>
+          )}
         </div>
       </div>
     </div>

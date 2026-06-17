@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, MessageSquare, Trash2, Leaf } from 'lucide-react';
+import { Plus, MessageSquare, Trash2, Leaf, X } from 'lucide-react';
 import type { ConversationSummary } from '../api';
 
 interface Props {
@@ -8,6 +8,9 @@ interface Props {
   onSelect: (id: string) => void;
   onNewChat: () => void;
   onDelete: (id: string) => void;
+  isMobile: boolean;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 function formatRelativeDate(iso: string): string {
@@ -32,13 +35,38 @@ function groupConversations(conversations: ConversationSummary[]) {
   return groups;
 }
 
-export default function Sidebar({ conversations, activeId, onSelect, onNewChat, onDelete }: Props) {
+export default function Sidebar({
+  conversations,
+  activeId,
+  onSelect,
+  onNewChat,
+  onDelete,
+  isMobile,
+  isOpen,
+  onClose,
+}: Props) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const grouped = groupConversations(conversations);
 
-  return (
-    <div
-      style={{
+  // On mobile the sidebar is a fixed-position slide-over drawer with a
+  // backdrop. On desktop it's a normal flex column always in the layout.
+  const containerStyle: React.CSSProperties = isMobile
+    ? {
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        height: '100%',
+        width: 'min(80vw, 300px)',
+        background: 'var(--bg-sidebar)',
+        borderRight: '1px solid var(--border)',
+        display: 'flex',
+        flexDirection: 'column',
+        zIndex: 50,
+        transform: isOpen ? 'translateX(0)' : 'translateX(-100%)',
+        transition: 'transform 0.25s ease',
+        boxShadow: isOpen ? '4px 0 24px rgba(0,0,0,0.35)' : 'none',
+      }
+    : {
         width: '264px',
         height: '100%',
         background: 'var(--bg-sidebar)',
@@ -46,168 +74,216 @@ export default function Sidebar({ conversations, activeId, onSelect, onNewChat, 
         display: 'flex',
         flexDirection: 'column',
         flexShrink: 0,
-      }}
-    >
-      {/* Brand */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '18px 16px 14px' }}>
+      };
+
+  function handleSelect(id: string) {
+    onSelect(id);
+    if (isMobile) onClose();
+  }
+
+  function handleNewChat() {
+    onNewChat();
+    if (isMobile) onClose();
+  }
+
+  return (
+    <>
+      {isMobile && isOpen && (
         <div
+          onClick={onClose}
           style={{
-            width: '30px',
-            height: '30px',
-            borderRadius: '8px',
-            background: 'var(--accent)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.5)',
+            zIndex: 40,
           }}
-        >
-          <Leaf size={16} color="#fff" strokeWidth={2.25} />
-        </div>
-        <span style={{ fontFamily: 'var(--font-display)', fontSize: '16px', fontWeight: 600, color: 'var(--text)' }}>
-          HealthGPT
-        </span>
-      </div>
+        />
+      )}
 
-      {/* New chat button */}
-      <div style={{ padding: '0 12px 12px' }}>
-        <button
-          onClick={onNewChat}
-          style={{
-            width: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '10px 12px',
-            borderRadius: '10px',
-            border: '1px solid var(--border)',
-            background: 'var(--surface)',
-            color: 'var(--text)',
-            fontSize: '13.5px',
-            fontWeight: 500,
-            cursor: 'pointer',
-            transition: 'background 0.15s, border-color 0.15s',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'var(--surface-alt)';
-            e.currentTarget.style.borderColor = 'var(--accent)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'var(--surface)';
-            e.currentTarget.style.borderColor = 'var(--border)';
-          }}
-        >
-          <Plus size={16} />
-          New chat
-        </button>
-      </div>
-
-      {/* Conversation list */}
-      <div className="chat-scroll" style={{ flex: 1, overflowY: 'auto', padding: '4px 8px 12px' }}>
-        {conversations.length === 0 && (
-          <p style={{ fontSize: '12.5px', color: 'var(--text-soft)', padding: '12px 8px', textAlign: 'center' }}>
-            No conversations yet. Start chatting to see your history here.
-          </p>
-        )}
-
-        {Object.entries(grouped).map(([label, convs]) => (
-          <div key={label} style={{ marginBottom: '14px' }}>
-            <p
+      <div style={containerStyle}>
+        {/* Brand */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 16px 14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div
               style={{
-                fontSize: '11px',
-                fontFamily: 'var(--font-mono)',
-                color: 'var(--text-soft)',
-                textTransform: 'uppercase',
-                letterSpacing: '0.04em',
-                padding: '8px 8px 4px',
-                margin: 0,
+                width: '30px',
+                height: '30px',
+                borderRadius: '8px',
+                background: 'var(--accent)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
               }}
             >
-              {label}
+              <Leaf size={16} color="#fff" strokeWidth={2.25} />
+            </div>
+            <span style={{ fontFamily: 'var(--font-display)', fontSize: '16px', fontWeight: 600, color: 'var(--text)' }}>
+              HealthGPT
+            </span>
+          </div>
+          {isMobile && (
+            <button
+              onClick={onClose}
+              aria-label="Close menu"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '32px',
+                height: '32px',
+                borderRadius: '8px',
+                border: 'none',
+                background: 'transparent',
+                color: 'var(--text-soft)',
+                cursor: 'pointer',
+              }}
+            >
+              <X size={18} />
+            </button>
+          )}
+        </div>
+
+        {/* New chat button */}
+        <div style={{ padding: '0 12px 12px' }}>
+          <button
+            onClick={handleNewChat}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '10px 12px',
+              borderRadius: '10px',
+              border: '1px solid var(--border)',
+              background: 'var(--surface)',
+              color: 'var(--text)',
+              fontSize: '13.5px',
+              fontWeight: 500,
+              cursor: 'pointer',
+              transition: 'background 0.15s, border-color 0.15s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'var(--surface-alt)';
+              e.currentTarget.style.borderColor = 'var(--accent)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'var(--surface)';
+              e.currentTarget.style.borderColor = 'var(--border)';
+            }}
+          >
+            <Plus size={16} />
+            New chat
+          </button>
+        </div>
+
+        {/* Conversation list */}
+        <div className="chat-scroll" style={{ flex: 1, overflowY: 'auto', padding: '4px 8px 12px' }}>
+          {conversations.length === 0 && (
+            <p style={{ fontSize: '12.5px', color: 'var(--text-soft)', padding: '12px 8px', textAlign: 'center' }}>
+              No conversations yet. Start chatting to see your history here.
             </p>
-            {convs.map((conv) => {
-              const isActive = conv.id === activeId;
-              const isHovered = conv.id === hoveredId;
-              return (
-                <div
-                  key={conv.id}
-                  onClick={() => onSelect(conv.id)}
-                  onMouseEnter={() => setHoveredId(conv.id)}
-                  onMouseLeave={() => setHoveredId(null)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    padding: '9px 10px',
-                    borderRadius: '8px',
-                    background: isActive ? 'var(--surface-alt)' : 'transparent',
-                    cursor: 'pointer',
-                    marginBottom: '2px',
-                    transition: 'background 0.12s',
-                  }}
-                >
-                  <MessageSquare
-                    size={14}
-                    color={isActive ? 'var(--accent)' : 'var(--text-soft)'}
-                    style={{ flexShrink: 0 }}
-                  />
-                  <span
+          )}
+
+          {Object.entries(grouped).map(([label, convs]) => (
+            <div key={label} style={{ marginBottom: '14px' }}>
+              <p
+                style={{
+                  fontSize: '11px',
+                  fontFamily: 'var(--font-mono)',
+                  color: 'var(--text-soft)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.04em',
+                  padding: '8px 8px 4px',
+                  margin: 0,
+                }}
+              >
+                {label}
+              </p>
+              {convs.map((conv) => {
+                const isActive = conv.id === activeId;
+                const isHovered = conv.id === hoveredId;
+                return (
+                  <div
+                    key={conv.id}
+                    onClick={() => handleSelect(conv.id)}
+                    onMouseEnter={() => setHoveredId(conv.id)}
+                    onMouseLeave={() => setHoveredId(null)}
                     style={{
-                      flex: 1,
-                      fontSize: '13px',
-                      color: isActive ? 'var(--text)' : 'var(--text-soft)',
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '9px 10px',
+                      borderRadius: '8px',
+                      background: isActive ? 'var(--surface-alt)' : 'transparent',
+                      cursor: 'pointer',
+                      marginBottom: '2px',
+                      transition: 'background 0.12s',
                     }}
                   >
-                    {conv.title}
-                  </span>
-                  {(isHovered || isActive) && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDelete(conv.id);
-                      }}
-                      title="Delete conversation"
+                    <MessageSquare
+                      size={14}
+                      color={isActive ? 'var(--accent)' : 'var(--text-soft)'}
+                      style={{ flexShrink: 0 }}
+                    />
+                    <span
                       style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        width: '22px',
-                        height: '22px',
-                        borderRadius: '6px',
-                        border: 'none',
-                        background: 'transparent',
-                        color: 'var(--text-soft)',
-                        cursor: 'pointer',
-                        flexShrink: 0,
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = 'var(--emergency-bg)';
-                        e.currentTarget.style.color = 'var(--emergency)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = 'transparent';
-                        e.currentTarget.style.color = 'var(--text-soft)';
+                        flex: 1,
+                        fontSize: '13px',
+                        color: isActive ? 'var(--text)' : 'var(--text-soft)',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
                       }}
                     >
-                      <Trash2 size={13} />
-                    </button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        ))}
-      </div>
+                      {conv.title}
+                    </span>
+                    {(isHovered || isActive || isMobile) && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDelete(conv.id);
+                        }}
+                        title="Delete conversation"
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: '24px',
+                          height: '24px',
+                          borderRadius: '6px',
+                          border: 'none',
+                          background: 'transparent',
+                          color: 'var(--text-soft)',
+                          cursor: 'pointer',
+                          flexShrink: 0,
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = 'var(--emergency-bg)';
+                          e.currentTarget.style.color = 'var(--emergency)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'transparent';
+                          e.currentTarget.style.color = 'var(--text-soft)';
+                        }}
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
 
-      {/* Footer disclaimer */}
-      <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)' }}>
-        <p style={{ fontSize: '10.5px', color: 'var(--text-soft)', margin: 0, lineHeight: 1.4 }}>
-          Not a substitute for professional medical advice.
-        </p>
+        {/* Footer disclaimer */}
+        <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)' }}>
+          <p style={{ fontSize: '10.5px', color: 'var(--text-soft)', margin: 0, lineHeight: 1.4 }}>
+            Not a substitute for professional medical advice.
+          </p>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
