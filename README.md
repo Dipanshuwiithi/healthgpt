@@ -56,8 +56,8 @@ cp .env.example .env
 uvicorn app.main:app --reload --port 8000
 ```
 
-Backend runs at `http://localhost:8000`. Interactive API docs at
-`http://localhost:8000/docs`. A `healthgpt.db` SQLite file is created
+Backend runs at `(https://wellnest-backend-wtvi.onrender.com)`. 
+A `healthgpt.db` SQLite file is created
 automatically in the `backend/` folder on first run.
 
 ### 2. Frontend
@@ -65,12 +65,12 @@ automatically in the `backend/` folder on first run.
 ```bash
 cd frontend
 npm install
-cp .env.example .env   # defaults to http://localhost:8000
+cp .env.example .env 
 
 npm run dev
 ```
 
-Frontend runs at `http://localhost:5173`.
+Frontend runs at `https://healthgpt-mu.vercel.app/`.
 
 ## API Endpoints
 
